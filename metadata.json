@@ -1,0 +1,5 @@
+{
+  "name": "Voice AI",
+  "description": "AI-powered speech enhancement that transcribes, analyzes, and corrects unclear audio recordings.",
+  "requestFramePermissions": ["microphone"]
+}

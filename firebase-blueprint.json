@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "VoiceAnalysis": {
+      "title": "Voice Analysis",
+      "description": "A record of a voice analysis session, including the corrected text and vocal profile.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The UID of the user who performed the analysis."
+        },
+        "originalText": {
+          "type": "string",
+          "description": "Text extracted from the original audio."
+        },
+        "correctedText": {
+          "type": "string",
+          "description": "The perfected/corrected version of the text."
+        },
+        "vocalProfile": {
+          "type": "object",
+          "description": "Analysis of the vocal characteristics.",
+          "properties": {
+            "description": { "type": "string" },
+            "tone": { "type": "string" },
+            "clarity": { "type": "string" },
+            "emotion": { "type": "string" },
+            "pacing": { "type": "string" }
+          }
+        },
+        "audioUrl": {
+          "type": "string",
+          "description": "URL to the generated audio file."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the analysis was created."
+        }
+      },
+      "required": ["userId", "correctedText", "createdAt"]
+    }
+  },
+  "firestore": {
+    "voice_analyses": {
+      "schema": "VoiceAnalysis",
+      "description": "Collection of voice analysis records."
+    }
+  }
+}
