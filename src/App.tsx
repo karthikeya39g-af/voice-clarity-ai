@@ -746,7 +746,7 @@ function App() {
                   </div>
                   <div className="p-12">
                     <h3 className="text-sm font-black uppercase tracking-widest text-violet-500 mb-8">Output Reconstruction</h3>
-                    <p className="text-4xl md:text-6xl font-serif italic leading-tight text-black min-h-[100px]">
+                    <p className="text-[25px] font-bold leading-tight text-black min-h-[100px]">
                       {result?.correctedText || "..."}
                     </p>
                   </div>
