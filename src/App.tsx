@@ -199,6 +199,8 @@ function App() {
   const [targetLanguage, setTargetLanguage] = useState('en');
   const [isTranslating, setIsTranslating] = useState(false);
   const [autoVoiceSync, setAutoVoiceSync] = useState(true);
+  const [generatedImageUrl, setGeneratedImageUrl] = useState<string | null>(null);
+  const [isGeneratingImage, setIsGeneratingImage] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
@@ -556,6 +558,64 @@ function App() {
     }
   };
 
+  const generateVisual = async () => {
+    if (!result || isGeneratingImage) return;
+    
+    setIsGeneratingImage(true);
+    setError(null);
+    
+    try {
+      const hasKey = await window.aistudio.hasSelectedApiKey();
+      if (!hasKey) {
+        await window.aistudio.openSelectKey();
+      }
+
+      // Create a fresh instance to use the latest selected key
+      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      
+      const prompt = `A cinematic, high-quality visual representation of the following scene or concept: "${result.correctedText}". 
+      Style: Modern, atmospheric, professional lighting, 8k resolution.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-flash-image-preview',
+        contents: {
+          parts: [{ text: prompt }],
+        },
+        config: {
+          imageConfig: {
+            aspectRatio: "16:9",
+            imageSize: "1K"
+          }
+        }
+      });
+
+      let foundImage = false;
+      for (const part of response.candidates[0].content.parts) {
+        if (part.inlineData) {
+          const base64Data = part.inlineData.data;
+          setGeneratedImageUrl(`data:image/png;base64,${base64Data}`);
+          foundImage = true;
+          break;
+        }
+      }
+
+      if (!foundImage) {
+        throw new Error("No image data returned from model.");
+      }
+
+    } catch (err: any) {
+      console.error("Image generation error:", err);
+      if (err.message?.includes("Requested entity was not found")) {
+        setError("API Key Error: Please re-select your paid API key.");
+        await window.aistudio.openSelectKey();
+      } else {
+        setError("Failed to generate visual. Ensure you have selected a paid API key with billing enabled.");
+      }
+    } finally {
+      setIsGeneratingImage(false);
+    }
+  };
+
   return (
     <div 
       className="min-h-screen text-[#1a1a1a] font-sans selection:bg-violet-500 selection:text-white overflow-x-hidden p-4 md:p-8 relative"
@@ -579,8 +639,8 @@ function App() {
       </div>
 
       <div 
-        className="max-w-7xl mx-auto relative z-10 p-8 rounded-3xl"
-        style={{ backgroundColor: '#e2d596' }}
+        className="max-w-7xl mx-auto relative z-10 p-8 rounded-3xl shadow-2xl"
+        style={{ backgroundColor: '#f5f2ed' }}
       >
         {/* Main Heading */}
         <div className="text-center mb-[10px] pl-[1px]">
@@ -745,11 +805,45 @@ function App() {
                     </button>
                   </div>
                   <div className="p-12">
-                    <h3 className="text-sm font-black uppercase tracking-widest text-violet-500 mb-8">Output Reconstruction</h3>
+                    <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-sm font-black uppercase tracking-widest text-violet-500">Output Reconstruction</h3>
+                      <button 
+                        onClick={generateVisual}
+                        disabled={isGeneratingImage}
+                        className="flex items-center gap-2 px-4 py-2 bg-black/5 hover:bg-black/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all disabled:opacity-50"
+                      >
+                        {isGeneratingImage ? <RefreshCw size={14} className="animate-spin" /> : <Sparkles size={14} className="text-violet-500" />}
+                        Visualize Scene
+                      </button>
+                    </div>
                     <p className="text-[25px] font-bold leading-tight text-black min-h-[100px]">
                       {result?.correctedText || "..."}
                     </p>
                   </div>
+
+                  {generatedImageUrl && (
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      className="p-8 border-t border-black/5 bg-black/[0.02]"
+                    >
+                      <div className="relative group rounded-2xl overflow-hidden shadow-2xl border border-black/10">
+                        <img src={generatedImageUrl} alt="Visual Reconstruction" className="w-full aspect-video object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button 
+                            onClick={() => window.open(generatedImageUrl)}
+                            className="px-6 py-3 bg-white text-black rounded-xl text-xs font-black uppercase tracking-widest hover:scale-105 transition-transform flex items-center gap-2"
+                          >
+                            <Download size={16} />
+                            Full Resolution
+                          </button>
+                        </div>
+                      </div>
+                      <p className="text-[10px] font-medium opacity-40 mt-4 text-center uppercase tracking-widest">
+                        Neural Visual Reconstruction • 1K Resolution • 16:9
+                      </p>
+                    </motion.div>
+                  )}
                 </motion.div>
               )}
 
